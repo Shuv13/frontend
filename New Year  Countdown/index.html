@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Year Countdown 2025</title>
+    <!-- Link to Font Awesome for snowflake icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            padding: .3rem;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: url("https://image.jimcdn.com/app/cms/image/transf/none/path/sa6549607c78f5c11/image/ib9e16268980e9e86/version/1540306357/val-gardena-ski-resort-new-year-eve.jpg");
+            margin: 0;
+            min-height: 100vh;
+            background-size: cover;
+            background-position: center center;
+            font-family: Arial, sans-serif;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 5rem;
+            font-weight: bold;
+        }
+
+        .countdown-container {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .big-text {
+            font-size: 6rem;
+            line-height: 2;
+            margin: 0 2rem;
+            font-weight: bold;
+        }
+
+        .countdown_el {
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .fa-snowflake {
+            color: #fff;
+            position: absolute;
+            top: -20px;
+            animation: fall linear forwards;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(105vh);
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>New Year's Countdown 2025</h1>
+
+    <div class="countdown-container">
+        <div class="countdown_el days-container">
+            <p class="big-text" id="days">0</p>
+            <span>Days</span>
+        </div>
+        <div class="countdown_el hours-container">
+            <p class="big-text" id="hours">0</p>
+            <span>Hours</span>
+        </div>
+        <div class="countdown_el minutes-container">
+            <p class="big-text" id="minutes">0</p>
+            <span>Minutes</span>
+        </div>
+        <div class="countdown_el seconds-container">
+            <p class="big-text" id="seconds">0</p>
+            <span>Seconds</span>
+        </div>
+    </div>
+
+    <script>
+        const daysEl = document.getElementById('days');
+        const hoursEl = document.getElementById('hours');
+        const minutesEl = document.getElementById('minutes');
+        const secondsEl = document.getElementById('seconds');
+
+        const newYears = '1 Jan 2025';
+
+        setInterval(countdown, 1000);
+        setInterval(createSnowFlake, 100);
+
+        function countdown() {
+            const newYearsDate = new Date(newYears);
+            const currentDate = new Date();
+
+            const totalSeconds = (newYearsDate - currentDate) / 1000;
+
+            const seconds = Math.floor(totalSeconds % 60);
+            const minutes = Math.floor(totalSeconds / 60) % 60;
+            const hours = Math.floor(totalSeconds / 3600) % 24;
+            const days = Math.floor(totalSeconds / 3600 / 24);
+
+            daysEl.innerHTML = days;
+            hoursEl.innerHTML = hours;
+            minutesEl.innerHTML = minutes;
+            secondsEl.innerHTML = seconds;
+        }
+
+        function createSnowFlake() {
+            const snow_flake = document.createElement('i');
+            snow_flake.classList.add('fas', 'fa-snowflake');
+            snow_flake.style.left = Math.random() * window.innerWidth + 'px';
+            snow_flake.style.animationDuration = Math.random() * 3 + 2 + 's';
+            snow_flake.style.opacity = Math.random();
+            snow_flake.style.fontSize = Math.random() * 10 + 10 + 'px';
+
+            document.body.appendChild(snow_flake);
+
+            setTimeout(() => {
+                snow_flake.remove();
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
