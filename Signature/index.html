@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Signature Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script&family=Great+Vibes&family=Pacifico&family=Sacramento&family=Allura&family=Petit+Formal+Script&family=Tangerine&family=Alex+Brush&family=Pinyon+Script&family=Mr+De+Haviland&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Signature Generator</h1>
+        <div class="input-box">
+            <input type="text" id="nameInput" placeholder="Type your name...">
+        </div>
+        <div class="font-selector">
+            <button class="font-btn active" data-font="Dancing Script">Dancing Script</button>
+            <button class="font-btn" data-font="Great Vibes">Great Vibes</button>
+            <button class="font-btn" data-font="Allura">Allura</button>
+            <button class="font-btn" data-font="Sacramento">Sacramento</button>
+            <button class="font-btn" data-font="Pinyon Script">Pinyon Script</button>
+            <button class="font-btn" data-font="Alex Brush">Alex Brush</button>
+            <button class="font-btn" data-font="Tangerine">Tangerine</button>
+            <button class="font-btn" data-font="Mr De Haviland">Mr De Haviland</button>
+            <button class="font-btn" data-font="Petit Formal Script">Petit Formal</button>
+            <button class="font-btn" data-font="Pacifico">Pacifico</button>
+        </div>
+        <div class="signature-box">
+            <div id="signature"></div>
+            <button id="copyBtn">Copy</button>
+        </div>
+        <div id="copyMessage">Copied!</div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
