@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar System Simulation</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        canvas {
+            border: 1px solid #333;
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .speed-label {
+            color: #fff;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+        }
+
+        .speed-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 150px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            outline: none;
+        }
+
+        .speed-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            background: #FFD700;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .speed-slider::-webkit-slider-thumb:hover {
+            background: #FFF;
+            box-shadow: 0 0 10px #FFD700;
+        }
+
+        .speed-value {
+            color: #FFD700;
+            font-family: monospace;
+            min-width: 40px;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="solarSystem"></canvas>
+    <div class="controls">
+        <span class="speed-label">Speed:</span>
+        <input type="range" min="0" max="200" value="50" class="speed-slider" id="speedControl">
+        <span class="speed-value" id="speedValue">1x</span>
+    </div>
+    <script>
+        const canvas = document.getElementById('solarSystem');
+        const ctx = canvas.getContext('2d');
+
+        // Set canvas size
+        canvas.width = window.innerWidth * 0.95;
+        canvas.height = window.innerHeight * 0.95;
+
+        // Constants for the simulation
+        const SUN_RADIUS = 30;
+        const ORBIT_SPEED_MULTIPLIER = 0.5;
+        let SPEED_MULTIPLIER = 1;
+        
+        // Planet data with realistic relative sizes and speeds
+        const planets = [
+            { name: 'Mercury', radius: 5, distance: 60, speed: 4.74 * ORBIT_SPEED_MULTIPLIER, color: '#A0522D', angle: 0 },
+            { name: 'Venus', radius: 8, distance: 90, speed: 3.50 * ORBIT_SPEED_MULTIPLIER, color: '#DEB887', angle: 0 },
+            { name: 'Earth', radius: 9, distance: 130, speed: 2.98 * ORBIT_SPEED_MULTIPLIER, color: '#4169E1', angle: 0 },
+            { name: 'Mars', radius: 6, distance: 170, speed: 2.41 * ORBIT_SPEED_MULTIPLIER, color: '#CD5C5C', angle: 0 },
+            { name: 'Jupiter', radius: 20, distance: 250, speed: 1.31 * ORBIT_SPEED_MULTIPLIER, color: '#DAA520', angle: 0 },
+            { name: 'Saturn', radius: 17, distance: 320, speed: 0.97 * ORBIT_SPEED_MULTIPLIER, color: '#F4A460', angle: 0 },
+            { name: 'Uranus', radius: 12, distance: 380, speed: 0.68 * ORBIT_SPEED_MULTIPLIER, color: '#87CEEB', angle: 0 },
+            { name: 'Neptune', radius: 11, distance: 440, speed: 0.54 * ORBIT_SPEED_MULTIPLIER, color: '#1E90FF', angle: 0 },
+            { name: 'Pluto', radius: 3, distance: 480, speed: 0.47 * ORBIT_SPEED_MULTIPLIER, color: '#8B4513', angle: 0 }
+        ];
+
+        // Moon data
+        const moon = {
+            radius: 3,
+            distance: 20,
+            speed: 13.0 * ORBIT_SPEED_MULTIPLIER,
+            color: '#D3D3D3',
+            angle: 0
+        };
+
+        // Planetary moons data
+        const planetaryMoons = {
+            Jupiter: [
+                { radius: 2, distance: 25, speed: 9.0 * ORBIT_SPEED_MULTIPLIER, color: '#D3D3D3' },
+                { radius: 2.2, distance: 30, speed: 7.0 * ORBIT_SPEED_MULTIPLIER, color: '#C0C0C0' },
+                { radius: 1.8, distance: 35, speed: 5.0 * ORBIT_SPEED_MULTIPLIER, color: '#A9A9A9' },
+                { radius: 1.5, distance: 40, speed: 4.0 * ORBIT_SPEED_MULTIPLIER, color: '#B8B8B8' }
+            ],
+            Saturn: [
+                { radius: 2.5, distance: 28, speed: 8.0 * ORBIT_SPEED_MULTIPLIER, color: '#E8E8E8' },
+                { radius: 1.8, distance: 33, speed: 6.0 * ORBIT_SPEED_MULTIPLIER, color: '#D3D3D3' }
+            ],
+            Uranus: [
+                { radius: 1.5, distance: 22, speed: 7.0 * ORBIT_SPEED_MULTIPLIER, color: '#C0C0C0' },
+                { radius: 1.3, distance: 26, speed: 5.5 * ORBIT_SPEED_MULTIPLIER, color: '#B8B8B8' }
+            ],
+            Neptune: [
+                { radius: 1.8, distance: 24, speed: 8.0 * ORBIT_SPEED_MULTIPLIER, color: '#D3D3D3' }
+            ]
+        };
+
+        // Create stars
+        const stars = Array(400).fill().map(() => ({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            radius: Math.random() * 1.2,
+            opacity: 0.5 + Math.random() * 0.5,
+            twinkleSpeed: 0.02 + Math.random() * 0.05
+        }));
+
+        function drawBackground() {
+            // Draw stars with twinkling effect
+            stars.forEach(star => {
+                star.opacity += Math.sin(Date.now() * star.twinkleSpeed) * 0.1;
+                star.opacity = Math.max(0.3, Math.min(1, star.opacity));
+                
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`;
+                ctx.fill();
+            });
+        }
+
+        function drawOrbit(distance) {
+            ctx.beginPath();
+            ctx.arc(canvas.width / 2, canvas.height / 2, distance, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.stroke();
+        }
+
+        function drawCelestialBody(x, y, radius, color) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+            
+            // Add simple shading
+            const gradient = ctx.createRadialGradient(x - radius/3, y - radius/3, 0, x, y, radius);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0.2)');
+            ctx.fillStyle = gradient;
+            ctx.fill();
+        }
+
+        function drawPlanetDetails(x, y, planet) {
+            // Base planet
+            drawCelestialBody(x, y, planet.radius, planet.color);
+            
+            switch(planet.name) {
+                case 'Saturn':
+                    // Draw Saturn's rings
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.rotate(0.5);
+                    
+                    // Define ring segments with different characteristics
+                    const ringSegments = [
+                        { radius: 2.4, width: 0.2, color: '#A88C6A', opacity: 0.7 },
+                        { radius: 2.2, width: 0.15, color: '#8B7355', opacity: 0.8 },
+                        { radius: 2.0, width: 0.1, color: '#6B4423', opacity: 0.6 },
+                        { radius: 1.8, width: 0.05, color: '#463E3F', opacity: 0.4 }
+                    ];
+
+                    // Draw ring shadow on planet
+                    ctx.beginPath();
+                    ctx.ellipse(0, planet.radius * 0.2, planet.radius * 1.8, planet.radius * 0.1, 0, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                    ctx.fill();
+
+                    // Draw all rings as complete circles
+                    ringSegments.forEach(ring => {
+                        ctx.beginPath();
+                        ctx.ellipse(
+                            0, 0,
+                            planet.radius * ring.radius,
+                            planet.radius * ring.radius * 0.3,
+                            0, 0, Math.PI * 2
+                        );
+                        ctx.strokeStyle = `rgba(${hexToRgb(ring.color)}, ${ring.opacity})`;
+                        ctx.lineWidth = planet.radius * ring.width;
+                        ctx.stroke();
+                    });
+
+                    // Add a subtle shadow gradient over the rings
+                    const ringGradient = ctx.createLinearGradient(
+                        0, -planet.radius * 2.4,
+                        0, planet.radius * 2.4
+                    );
+                    ringGradient.addColorStop(0, 'rgba(0, 0, 0, 0.3)');
+                    ringGradient.addColorStop(0.5, 'rgba(0, 0, 0, 0)');
+                    ringGradient.addColorStop(1, 'rgba(0, 0, 0, 0.3)');
+                    
+                    ctx.fillStyle = ringGradient;
+                    ctx.beginPath();
+                    ctx.ellipse(
+                        0, 0,
+                        planet.radius * 2.4,
+                        planet.radius * 2.4 * 0.3,
+                        0, 0, Math.PI * 2
+                    );
+                    ctx.fill();
+
+                    ctx.restore();
+                    break;
+
+                case 'Mars':
+                    // Draw Mars' polar ice caps and surface features
+                    ctx.beginPath();
+                    ctx.arc(x, y - planet.radius * 0.7, planet.radius * 0.3, 0, Math.PI * 2);
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fill();
+                    
+                    // Surface details
+                    ctx.beginPath();
+                    ctx.ellipse(
+                        x - planet.radius * 0.3, 
+                        y, 
+                        planet.radius * 0.4, 
+                        planet.radius * 0.2, 
+                        0.5, 
+                        0, Math.PI * 2
+                    );
+                    ctx.fillStyle = '#8B4513';
+                    ctx.fill();
+                    break;
+
+                case 'Earth':
+                    // Draw Earth's continents (simplified)
+                    const continentColor = '#228B22';
+                    for (let i = 0; i < 3; i++) {
+                        ctx.beginPath();
+                        ctx.ellipse(
+                            x + (i - 1) * planet.radius * 0.4, 
+                            y, 
+                            planet.radius * 0.4, 
+                            planet.radius * 0.3, 
+                            Math.random(), 
+                            0, Math.PI * 2
+                        );
+                        ctx.fillStyle = continentColor;
+                        ctx.fill();
+                    }
+                    
+                    // Add cloud layer
+                    ctx.beginPath();
+                    ctx.arc(x, y, planet.radius, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    break;
+
+                case 'Uranus':
+                case 'Neptune':
+                    // Add cloud layers
+                    for (let i = 0; i < 3; i++) {
+                        ctx.beginPath();
+                        ctx.arc(x, y, planet.radius * (0.8 + i * 0.1), 
+                            Math.PI * (0.2 * Math.sin(Date.now() * 0.001 + i)), 
+                            Math.PI * (1 + 0.2 * Math.cos(Date.now() * 0.001 + i)));
+                        ctx.strokeStyle = `rgba(255, 255, 255, ${0.1 + i * 0.05})`;
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    }
+                    break;
+            }
+        }
+
+        function animate() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            drawBackground();
+
+            // Draw sun
+            const sunX = canvas.width / 2;
+            const sunY = canvas.height / 2;
+            
+            // Sun glow effect
+            const sunGlow = ctx.createRadialGradient(
+                sunX, sunY, 
+                canvas.scaledSunRadius * 0.5, 
+                sunX, sunY, 
+                canvas.scaledSunRadius * 2
+            );
+            sunGlow.addColorStop(0, 'rgba(255, 200, 64, 0.4)');
+            sunGlow.addColorStop(1, 'rgba(255, 200, 64, 0)');
+            ctx.fillStyle = sunGlow;
+            ctx.beginPath();
+            ctx.arc(sunX, sunY, canvas.scaledSunRadius * 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            drawCelestialBody(sunX, sunY, canvas.scaledSunRadius, '#FFD700');
+
+            // Draw planets and their orbits
+            planets.forEach(planet => {
+                drawOrbit(planet.scaledDistance);
+                
+                const x = sunX + Math.cos(planet.angle) * planet.scaledDistance;
+                const y = sunY + Math.sin(planet.angle) * planet.scaledDistance;
+                
+                drawPlanetDetails(x, y, {
+                    ...planet,
+                    radius: planet.scaledRadius
+                });
+                
+                planet.angle += planet.speed * 0.001 * SPEED_MULTIPLIER;
+
+                // Update moon drawing for planets with moons
+                if (planetaryMoons[planet.name]) {
+                    planetaryMoons[planet.name].forEach(moon => {
+                        if (!moon.angle) moon.angle = Math.random() * Math.PI * 2;
+                        
+                        const moonX = x + Math.cos(moon.angle) * moon.scaledDistance;
+                        const moonY = y + Math.sin(moon.angle) * moon.scaledDistance;
+                        
+                        ctx.beginPath();
+                        ctx.arc(x, y, moon.scaledDistance, 0, Math.PI * 2);
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+                        ctx.stroke();
+                        
+                        drawCelestialBody(moonX, moonY, moon.scaledRadius, moon.color);
+                        
+                        moon.angle += moon.speed * 0.01 * SPEED_MULTIPLIER;
+                    });
+                }
+                // Update Earth's moon
+                else if (planet.name === 'Earth') {
+                    const moonX = x + Math.cos(moon.angle) * moon.scaledDistance;
+                    const moonY = y + Math.sin(moon.angle) * moon.scaledDistance;
+                    
+                    ctx.beginPath();
+                    ctx.arc(x, y, moon.scaledDistance, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+                    ctx.stroke();
+                    
+                    drawCelestialBody(moonX, moonY, moon.scaledRadius, moon.color);
+                    
+                    moon.angle += moon.speed * 0.01 * SPEED_MULTIPLIER;
+                }
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        function handleResize() {
+            const dpr = window.devicePixelRatio || 1;
+            const screenWidth = window.innerWidth;
+            const screenHeight = window.innerHeight;
+            
+            // Calculate the maximum orbit radius needed
+            const maxOrbitRadius = Math.max(...planets.map(p => p.distance));
+            
+            // Calculate the scaling factor to fit all orbits
+            const scaleFactor = Math.min(
+                (screenWidth * 0.95) / (maxOrbitRadius * 2.2),
+                (screenHeight * 0.95) / (maxOrbitRadius * 2.2)
+            );
+            
+            // Apply scaling to distances and radii
+            planets.forEach(planet => {
+                planet.scaledDistance = planet.distance * scaleFactor;
+                planet.scaledRadius = Math.max(planet.radius * scaleFactor, 2);
+            });
+            
+            // Update moon distances
+            Object.values(planetaryMoons).flat().forEach(moon => {
+                moon.scaledDistance = moon.distance * scaleFactor;
+                moon.scaledRadius = Math.max(moon.radius * scaleFactor, 1);
+            });
+            
+            // Update Earth's moon
+            moon.scaledDistance = moon.distance * scaleFactor;
+            moon.scaledRadius = Math.max(moon.radius * scaleFactor, 1.5);
+            
+            // Update sun radius
+            const scaledSunRadius = Math.max(SUN_RADIUS * scaleFactor, 15);
+            
+            // Set canvas size
+            let newWidth = screenWidth * 0.95;
+            let newHeight = screenHeight * 0.95;
+            
+            canvas.width = newWidth * dpr;
+            canvas.height = newHeight * dpr;
+            canvas.style.width = `${newWidth}px`;
+            canvas.style.height = `${newHeight}px`;
+            
+            // Scale context
+            ctx.scale(dpr, dpr);
+            
+            // Recalculate star positions
+            stars.forEach(star => {
+                star.x = Math.random() * newWidth;
+                star.y = Math.random() * newHeight;
+            });
+            
+            // Store scaled sun radius for use in animation
+            canvas.scaledSunRadius = scaledSunRadius;
+        }
+
+        function hexToRgb(hex) {
+            hex = hex.replace('#', '');
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
+            return `${r}, ${g}, ${b}`;
+        }
+
+        // Speed control functionality
+        const speedSlider = document.getElementById('speedControl');
+        const speedValue = document.getElementById('speedValue');
+
+        speedSlider.addEventListener('input', (e) => {
+            SPEED_MULTIPLIER = e.target.value / 50;
+            speedValue.textContent = SPEED_MULTIPLIER.toFixed(1) + 'x';
+        });
+        
+        // Initialize the simulation
+        window.addEventListener('resize', handleResize);
+        handleResize();
+        animate();
+    </script>
+</body>
+</html>
